@@ -1,26 +1,31 @@
+<?php include 'db.php'; ?>
+
 <?php
-// Start session
-session_start();
+  // SELECT QUERY
+  $query = 'SELECT * FROM messages ORDER BY create_date DESC';
+  $messages = mysqli_query($connection, $query);
 
-  if(isset($_POST['name'])){
-   if(isset($_SESSION['bookmarks'])){
-     $_SESSION['bookmarks'][$_POST['name']] = $_POST['url'];
-   } else {
-     $_SESSION['bookmarks'] = Array($_POST['name'] => $_POST['url']);
-   }
+  if(isset($_GET['action']) && isset($_GET['id'])){
+    if($_GET['action'] == 'delete'){
+      $id = $_GET['id'];
+
+      $query = "DELETE FROM messages WHERE id = $id";
+
+      if(!mysqli_query($connection, $query)){
+        die(mysqli_error($conn));
+      } else {
+        header("Location: index.php?success=Message%20Removed");
+      }
+    }
   }
 
-  if(isset($_GET['action']) && $_GET['action'] == 'delete'){
-    unset($_SESSION['bookmarks'][$_GET['name']]);
-    header("Location: index.php");
+  if(isset($_GET['error'])){
+    $error = $_GET['error'];
   }
-  
-  if(isset($_GET['action']) && $_GET['action'] == 'clear'){
-    session_unset();
-    session_destroy();
-    header("Location: index.php");
+  if(isset($_GET['success'])){
+    $success = $_GET['success'];
   }
-?>
+  ?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -28,64 +33,40 @@ session_start();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Bookmarker</title>
-  <link rel="stylesheet" href="https://bootswatch.com/3/cyborg/bootstrap.min.css">
-  <style>
-    .delete{color:white;}
-  </style>
+  <title>MessageApp</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<nav class="navbar navbar-default">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">Bookmarker</a>
-        </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li><a href="index.php">Home</a></li>
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="index.php?action=clear">Clear All</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
-
-    <div class="container">
-    <div class="row">
-      <div class="col-md-7">
-        <form method="post" action="<?php $_SERVER['PHP_SELF']; ?>">
-          <div class="form-group">
-            <label>Website Name</label>
-            <input type="text" class="form-control" name="name">
-          </div>
-          <div class="form-group">
-            <label>Website Url</label>
-            <input type="text" class="form-control" name="url">
-          </div>
-          <input type="submit" value="Submit" class="btn btn-default">
-        </form>
-      </div>
-      <br>
-      <div class="col-md-5">
-        <?php if(isset($_SESSION['bookmarks'])) : ?>
-          <ul class="list-group">
-            <?php foreach($_SESSION['bookmarks'] as $name => $url) : ?>
-              <li class="list-group-item">
-                <a href="<?php echo $url; ?>"><?php echo $name; ?></a>
-                <a class="delete" href="index.php?action=delete&name=<?php echo $name; ?>">[x]</a>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        <?php endif; ?>
-      </div>
+  <div class="container">
+    <header>
+      <h1>MessageApp</h1>
+      <?php if(isset($error)): ?>
+        <div class="alert"><?php echo $error; ?></div>
+      <?php endif; ?>
+      <?php if(isset($success)): ?>
+        <div class="success"><?php echo $success; ?></div>
+      <?php endif; ?>
+    </header>
+    <div class="main">
+      <form method="POST" action="process.php">
+        <input type="text" name="text" placeholder="Enter Message Text">
+        <input type="text" name="user" placeholder="Enter Username">
+        <input type="submit" value="Submit">
+      </form>
+      <hr>
+      <ul class="messages">
+      <?php while($row = mysqli_fetch_assoc($messages)) : ?>
+        <li><?php echo $row['text']; ?> | <?php echo $row['user'];?>
+        [<?php echo $row['create_date']; ?>] 
+        - <a href="index.php?action=delete&id=<?php echo $row['id']; ?>">X</a>
+        </li>
+      <?php endwhile; ?>
+      
+      </ul>
     </div>
-    </div>
+    <footer>
+    MessageApp &copy; 2018
+    </footer>
+  </div>
 </body>
 </html>
